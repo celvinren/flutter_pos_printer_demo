@@ -12,6 +12,14 @@ dependencies:
   cupertino_icons: ^1.0.6
   flutter:
     sdk: flutter
+  flutter_esc_pos_utils: ^1.0.1
+  # flutter_thermal_printer: ^0.0.16
+  image: ^4.5.2
+  path_provider: ^2.1.5
+  qr_flutter: ^4.1.0
+  thermal_printer: ^1.0.5
+  tray_manager: ^0.3.1
+  window_manager: ^0.4.3
 
 dev_dependencies:
   flutter_lints: ^3.0.0
@@ -20,3 +28,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/
