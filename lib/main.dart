@@ -56,14 +56,14 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> with TrayListener {
   final int _counter = 0;
 
-  void _printDocs() async {
+  void _printDocs({String? content}) async {
     final profile = await CapabilityProfile.load();
     final generator = Generator(PaperSize.mm80, profile);
     List<int> bytes = [];
     // bytes += generator.text('Bold text', styles: const PosStyles(bold: true));
     // bytes += generator.text('Normal text');
 
-    String qrData = "google com";
+    String qrData = content ?? "google com";
     const double qrSize = 200;
     try {
       final uiImg = await QrPainter(
@@ -79,6 +79,7 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
       final img = image.decodeImage(imgFile.readAsBytesSync());
 
       bytes += generator.image(img!);
+      bytes += generator.text('Content: $qrData');
     } catch (e) {
       print(e);
     }
@@ -107,16 +108,21 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
         }
         _isScanning = true;
         final key = event.logicalKey.keyLabel;
+        if (key.isNotEmpty &&
+            !key.contains('Shift') &&
+            !key.contains('Alt') &&
+            !key.contains('Control')) {
+          _barcodeBuffer += key;
 
-        _barcodeBuffer += key;
-
-        _timer?.cancel();
-        _timer = Timer(const Duration(milliseconds: 300), () {
-          if (_barcodeBuffer.isNotEmpty) {
-            print("Scanned Barcode: $_barcodeBuffer");
-            _isScanning = false;
-          }
-        });
+          _timer?.cancel();
+          _timer = Timer(const Duration(milliseconds: 300), () {
+            if (_barcodeBuffer.isNotEmpty) {
+              print("Scanned Barcode: $_barcodeBuffer");
+              _isScanning = false;
+              // _printDocs(content: _barcodeBuffer);
+            }
+          });
+        }
       }
       return false;
     });
