@@ -54,8 +54,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with TrayListener {
-  final int _counter = 0;
-
   void _printDocs({String? content}) async {
     final profile = await CapabilityProfile.load();
     final generator = Generator(PaperSize.mm80, profile);
@@ -93,38 +91,14 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
   }
 
   String _barcodeBuffer = '';
-  bool _isScanning = false;
   Timer? _timer;
+  final FocusNode _focusNode = FocusNode();
+  final TextEditingController _controller = TextEditingController();
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       startScan();
-    });
-    HardwareKeyboard.instance.addHandler((KeyEvent event) {
-      if (event is KeyDownEvent) {
-        if (!_isScanning) {
-          _barcodeBuffer = '';
-        }
-        _isScanning = true;
-        final key = event.logicalKey.keyLabel;
-        if (key.isNotEmpty &&
-            !key.contains('Shift') &&
-            !key.contains('Alt') &&
-            !key.contains('Control')) {
-          _barcodeBuffer += key;
-
-          _timer?.cancel();
-          _timer = Timer(const Duration(milliseconds: 300), () {
-            if (_barcodeBuffer.isNotEmpty) {
-              print("Scanned Barcode: $_barcodeBuffer");
-              _isScanning = false;
-              // _printDocs(content: _barcodeBuffer);
-            }
-          });
-        }
-      }
-      return false;
     });
 
     trayManager.addListener(this);
@@ -248,36 +222,64 @@ class _MyHomePageState extends State<MyHomePage> with TrayListener {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Image.asset('assets/flutter.jpg'),
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _minimizeToTray();
-              },
-              child: const Text('最小化到托盘'),
-            )
-          ],
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        _focusNode.requestFocus();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: Text(widget.title),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _printDocs,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Image.asset('assets/flutter.jpg'),
+              // 隐藏的 TextField，仅用于监听条码输入
+              Opacity(
+                opacity: 0,
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  autofocus: true,
+                  showCursor: false,
+                  enableInteractiveSelection: false,
+                  decoration: const InputDecoration.collapsed(hintText: ""),
+                  onChanged: (value) {
+                    _timer?.cancel();
+                    _timer = Timer(const Duration(milliseconds: 300), () {
+                      if (value.isNotEmpty) {
+                        _barcodeBuffer = value;
+                        _controller.clear();
+                        print("Scanned Barcode: $_barcodeBuffer");
+                        _printDocs(content: _barcodeBuffer);
+                      }
+                    });
+                  },
+                ),
+              ),
+
+              ElevatedButton(
+                onPressed: () {
+                  _minimizeToTray();
+                },
+                child: const Text('最小化到托盘'),
+              ),
+              ElevatedButton(
+                focusNode: FocusNode(skipTraversal: true),
+                onPressed: () {},
+                child: const Text('Test'),
+              ),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _printDocs,
+          tooltip: 'Increment',
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
