@@ -56,9 +56,11 @@ class _PrinterListenerState extends State<PrinterListener> {
 
     bytes += generator.feed(2);
     bytes += generator.cut();
-    _connectDevice(devices.first, PrinterType.usb);
-    final result =
-        await PrinterManager.instance.send(bytes: bytes, type: PrinterType.usb);
+    // await _connectDevice(selectedPrinter: devices.first, type: PrinterType.usb);
+    await _connectDevice(
+        type: PrinterType.network, ipAddress: '192.168.102.221');
+    final result = await PrinterManager.instance
+        .send(bytes: bytes, type: PrinterType.network);
     debugPrint(result.toString());
   }
 
@@ -80,25 +82,30 @@ class _PrinterListenerState extends State<PrinterListener> {
     });
   }
 
-  _connectDevice(PrinterDevice selectedPrinter, PrinterType type,
-      {bool reconnect = false, bool isBle = false, String? ipAddress}) async {
+  Future<void> _connectDevice({
+    required PrinterType type,
+    PrinterDevice? selectedPrinter,
+    bool reconnect = false,
+    bool isBle = false,
+    String? ipAddress,
+  }) async {
     switch (type) {
       // only windows and android
       case PrinterType.usb:
         await PrinterManager.instance.connect(
             type: type,
             model: UsbPrinterInput(
-                name: selectedPrinter.name,
-                productId: selectedPrinter.productId,
-                vendorId: selectedPrinter.vendorId));
+                name: selectedPrinter?.name,
+                productId: selectedPrinter?.productId,
+                vendorId: selectedPrinter?.vendorId));
         break;
       // only iOS and android
       case PrinterType.bluetooth:
         await PrinterManager.instance.connect(
             type: type,
             model: BluetoothPrinterInput(
-                name: selectedPrinter.name,
-                address: selectedPrinter.address!,
+                name: selectedPrinter?.name,
+                address: selectedPrinter!.address!,
                 isBle: isBle,
                 autoConnect: reconnect));
         break;
@@ -106,7 +113,8 @@ class _PrinterListenerState extends State<PrinterListener> {
         await PrinterManager.instance.connect(
             type: type,
             model: TcpPrinterInput(
-                ipAddress: ipAddress ?? selectedPrinter.address!));
+              ipAddress: ipAddress ?? selectedPrinter?.address ?? '',
+            ));
         break;
       default:
     }
